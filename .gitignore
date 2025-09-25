@@ -1,0 +1,3 @@
+.env
+gpustat_log.jsonl
+wandb/*
