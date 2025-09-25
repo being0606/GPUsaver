@@ -7,16 +7,16 @@ from datetime import datetime
 
 def get_gpustat_json():
     try:
-        # gpustat --json 명령 실행
+        # Execute the 'gpustat --json' command
         result = subprocess.run(['gpustat', '--json'], capture_output=True, text=True, check=True)
         return json.loads(result.stdout)
     except Exception as e:
-        print(f"gpustat 호출 에러: {e}")
+        print(f"Error calling gpustat: {e}")
         return None
 
 def save_log(data, filename):
-    # JSON Lines 형식으로 시간과 gpustat 데이터를 저장
-    # 로그 디렉터리가 없으면 생성
+    # Save timestamp and gpustat data in JSON Lines format.
+    # Create the log directory if it doesn't exist.
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     with open(filename, 'a') as f:
         log_entry = {
@@ -30,7 +30,7 @@ def main(logfile_path, interval_seconds):
         data = get_gpustat_json()
         if data:
             save_log(data, filename=logfile_path)
-            print(f"[{datetime.now().isoformat()}] GPU 상태 저장 완료")
+            print(f"[{datetime.now().isoformat()}] GPU status saved successfully.")
         time.sleep(interval_seconds)
 
 if __name__ == "__main__":

@@ -5,19 +5,19 @@ import argparse
 from loguru import logger
 
 
-# entity를 명시하지 않으면 로그인된 사용자의 기본 네임스페이스에 프로젝트가 생성됩니다.
+# If entity is not specified, the project will be created in the default namespace of the logged-in user.
 wandb.init(project="gpustat_monitor")
 logger.info("wandb.init complete. Starting to monitor log file.")
 
 
 def follow_jsonl_file(filepath):
     with open(filepath, "r") as f:
-        # 파일 끝으로 이동
+        # Move to the end of the file
         f.seek(0, 2)
         while True:
             line = f.readline()
             if not line:
-                time.sleep(5)  # 새 로그 대기
+                time.sleep(5)  # Wait for new logs
                 continue
             yield line
 
@@ -35,7 +35,7 @@ def main(logfile_path):
         timestamp = record["timestamp"]
         gpus = record.get("gpustat", {}).get("gpus", [])
 
-        # 모든 GPU의 메트릭을 하나의 딕셔너리에 수집
+        # Collect metrics for all GPUs into a single dictionary
         log_data = {}
         for gpu in gpus:
             gpu_index = gpu["index"]
@@ -43,7 +43,7 @@ def main(logfile_path):
             log_data[f"GPU{gpu_index}/memory_used"] = gpu["memory.used"]
             log_data[f"GPU{gpu_index}/temperature"] = gpu["temperature.gpu"]
 
-        # 모든 GPU 데이터를 한 번에 로그
+        # Log all GPU data at once
         wandb.log(log_data)
         logger.debug(f"Logged data for all GPUs at timestamp: {timestamp}")
 
