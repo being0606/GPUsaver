@@ -1,3 +1,5 @@
 gpustat
 wandb
 loguru
+dotenv
+slack_sdk
