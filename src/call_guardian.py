@@ -36,6 +36,7 @@ else:
 
 STATUS_FILE = "logs/gpustat_log.jsonl"
 NUM_TOTAL_GPUS = 6 # 전체 GPU 개수
+CHECK_INTERVAL_SECONDS = 1800 # 0.5시간
 
 # -----------------------------
 # 메인 루프
@@ -58,7 +59,7 @@ def main_loop():
         return
     
     # 로그 분석 및 알림 로직을 유틸리티 함수로 위임
-    analyze_gpu_log_and_notify(last_line, client, USER_MAP, NUM_TOTAL_GPUS)
+    analyze_gpu_log_and_notify(last_line, client, USER_MAP, NUM_TOTAL_GPUS, CHECK_INTERVAL_SECONDS)
 
 # -----------------------------
 # 실행 진입점
@@ -66,5 +67,5 @@ def main_loop():
 if __name__ == "__main__":
     while True:
         main_loop()
-        logger.info("다음 확인까지 1시간 대기합니다...")
-        time.sleep(3600) # 1시간 (3600초) 대기
+        logger.info(f"다음 확인까지 {CHECK_INTERVAL_SECONDS / 3600}시간 대기합니다...")
+        time.sleep(CHECK_INTERVAL_SECONDS)
