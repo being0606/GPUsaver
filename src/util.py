@@ -60,7 +60,7 @@ def send_dm(client: WebClient, user_map: dict, user_name: str, text: str):
         logger.error(f"⚠️ DM 전송 중 알 수 없는 에러 ({user_name}): {e}")
 
 
-def analyze_gpu_log_and_notify(last_line: str, client: WebClient, user_map: dict, num_total_gpus: int):
+def analyze_gpu_log_and_notify(last_line: str, client: WebClient, user_map: dict, num_total_gpus: int, check_interval_seconds: int):
     """
     최신 GPU 로그 라인을 분석하고, 사용자에게 DM을 보냅니다.
     """
@@ -111,7 +111,10 @@ def analyze_gpu_log_and_notify(last_line: str, client: WebClient, user_map: dict
 
         dt_object = datetime.fromisoformat(timestamp_iso)
         formatted_time = dt_object.strftime("%Y년 %m월 %d일 %H시 %M분")
-        message_header = f"#--------------{status_emoji}--------------#\n\n[A6000서버 GPU 사용 현황]\n - {formatted_time} 기준 \n - 사용 가능: {num_available_gpus} / {num_total_gpus}대"
+        
+        guardian_header = f"[ GPU_Guardian 작동중 ]\n{check_interval_seconds / 3600}시간마다 GPU status를 확인하여 변화를 발견하면 알려드립니다.\n"
+
+        message_header = f"{guardian_header}\n#--------------{status_emoji}--------------#\n\n[A6000서버 GPU 사용 현황]\n - {formatted_time} 기준 \n - 사용 가능: {num_available_gpus} / {num_total_gpus}대"
 
         # 사용자별 메시지 생성 및 전송
         if user_gpu_map:
