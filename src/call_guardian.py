@@ -14,6 +14,7 @@ from util import get_last_log_line, analyze_gpu_log_and_notify
 load_dotenv()
 SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_API_GARDIAN")
 SLACK_USER_MAP_JSON = os.getenv("SLACK_USER_MAP")
+REFERENCE_LINK = os.getenv("REFERENCE_LINK", "") # 구글 시트 링크
 
 client = None
 try:
@@ -59,7 +60,7 @@ def main_loop():
         return
     
     # 로그 분석 및 알림 로직을 유틸리티 함수로 위임
-    analyze_gpu_log_and_notify(last_line, client, USER_MAP, NUM_TOTAL_GPUS, CHECK_INTERVAL_SECONDS)
+    analyze_gpu_log_and_notify(last_line, client, USER_MAP, NUM_TOTAL_GPUS, CHECK_INTERVAL_SECONDS, REFERENCE_LINK)
 
 # -----------------------------
 # 실행 진입점

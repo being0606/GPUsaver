@@ -60,7 +60,7 @@ def send_dm(client: WebClient, user_map: dict, user_name: str, text: str):
         logger.error(f"⚠️ DM 전송 중 알 수 없는 에러 ({user_name}): {e}")
 
 
-def analyze_gpu_log_and_notify(last_line: str, client: WebClient, user_map: dict, num_total_gpus: int, check_interval_seconds: int):
+def analyze_gpu_log_and_notify(last_line: str, client: WebClient, user_map: dict, num_total_gpus: int, check_interval_seconds: int, reference_link: str):
     """
     최신 GPU 로그 라인을 분석하고, 사용자에게 DM을 보냅니다.
     """
@@ -129,6 +129,10 @@ def analyze_gpu_log_and_notify(last_line: str, client: WebClient, user_map: dict
             # 사용자가 없을 때도 상태를 알림
             message = f"{message_header}\n\n모든 GPU가 사용 가능합니다."
 
+        # 참조 링크 추가
+        if reference_link:
+            message += f"\n\n[GPU캘린더링크]\nlink: {reference_link}"
+            
         # user_map에 등록된 모든 사용자에게 알림 전송
         for user in user_map.keys():
             send_dm(client, user_map, user, message)
