@@ -5,8 +5,6 @@ from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from loguru import logger
 
-STATE_FILE = "logs/notification_state.json"
-
 
 def get_last_log_line(filepath):
     """파일의 마지막 줄을 읽어옴"""
@@ -60,10 +58,13 @@ def send_dm(client: WebClient, user_map: dict, user_name: str, text: str):
         logger.error(f"⚠️ DM 전송 중 알 수 없는 에러 ({user_name}): {e}")
 
 
-def analyze_gpu_log_and_notify(last_line: str, client: WebClient, user_map: dict, num_total_gpus: int, check_interval_seconds: int, reference_link: str):
+def analyze_gpu_log_and_notify(last_line: str, client: WebClient, user_map: dict, num_total_gpus: int, check_interval_seconds: int, reference_link: str, status_file: str):
     """
     최신 GPU 로그 라인을 분석하고, 사용자에게 DM을 보냅니다.
     """
+    # 머신별로 상태 파일을 다르게 지정
+    state_file = status_file.replace(".jsonl", "_notification_state.json")
+
     try:
         record = json.loads(last_line)
         timestamp_iso = record.get("timestamp")
@@ -95,7 +96,7 @@ def analyze_gpu_log_and_notify(last_line: str, client: WebClient, user_map: dict
         num_available_gpus = num_total_gpus - len(all_used_gpus)
 
         # --- 상태 변경 확인 로직 ---
-        last_available_gpus = read_notification_state(STATE_FILE)
+        last_available_gpus = read_notification_state(state_file)
 
         if num_available_gpus == last_available_gpus:
             logger.info(f"사용 가능한 GPU 수({num_available_gpus}개)에 변경이 없어 알림을 보내지 않습니다.")
@@ -138,7 +139,7 @@ def analyze_gpu_log_and_notify(last_line: str, client: WebClient, user_map: dict
             send_dm(client, user_map, user, message)
         
         # 알림 성공 후 상태 저장
-        write_notification_state(STATE_FILE, num_available_gpus)
+        write_notification_state(state_file, num_available_gpus)
 
     except json.JSONDecodeError:
         logger.error(f"로그 파일 파싱 오류: {last_line}")

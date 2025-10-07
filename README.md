@@ -48,6 +48,9 @@ pip install -r requirements.txt
 ```bash
 script/get_status.sh # Display current GPU usage
 script/run_visualize.sh # Visualize GPU status with wandb
+script/get_statue.sh # GPU 상태 로깅 시작 (e.g., ./script/get_statue.sh --machine-name A6000)
+script/run_guardian.sh # GPU 상태 변경 알림 시작 (e.g., ./script/run_guardian.sh --machine-name A6000)
+script/run_visualize.sh # GPU 상태 시각화 (e.g., ./script/run_visualize.sh --logfile logs/log_gpustat_A6000.jsonl)
 ```
 
 ### ⚠️ Make sure you are logged into Weights & Biases if you want to use visualization:

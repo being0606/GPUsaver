@@ -2,6 +2,7 @@ import os
 import time
 import json
 from dotenv import load_dotenv
+import argparse
 from slack_sdk import WebClient
 from loguru import logger
 
@@ -35,38 +36,44 @@ if SLACK_USER_MAP_JSON:
 else:
     logger.warning("SLACK_USER_MAP 환경 변수가 설정되지 않았습니다. 알림을 보낼 사용자가 없습니다.")
 
-STATUS_FILE = "logs/gpustat_log.jsonl"
 NUM_TOTAL_GPUS = 6 # 전체 GPU 개수
 CHECK_INTERVAL_SECONDS = 1800 # 0.5시간
 
 # -----------------------------
 # 메인 루프
 # -----------------------------
-def main_loop():
+def main_loop(status_file: str):
     """GPU 상태를 체크하여 사용자에게 한 번 알림"""
     if not client:
         logger.error("Slack 클라이언트가 초기화되지 않아 프로그램을 종료합니다.")
         return
-    
+
     if not USER_MAP:
         logger.warning("알림을 보낼 사용자가 설정되지 않았습니다. SLACK_USER_MAP 환경 변수를 확인하세요.")
         return
 
     logger.info("🔍 GPU 상태를 확인하고 알림을 보냅니다...")
-    last_line = get_last_log_line(STATUS_FILE)
+    last_line = get_last_log_line(status_file)
 
     if not last_line:
         logger.info("처리할 최신 GPU 로그가 없습니다.")
         return
-    
+
     # 로그 분석 및 알림 로직을 유틸리티 함수로 위임
-    analyze_gpu_log_and_notify(last_line, client, USER_MAP, NUM_TOTAL_GPUS, CHECK_INTERVAL_SECONDS, REFERENCE_LINK)
+    analyze_gpu_log_and_notify(last_line, client, USER_MAP, NUM_TOTAL_GPUS, CHECK_INTERVAL_SECONDS, REFERENCE_LINK, status_file)
 
 # -----------------------------
 # 실행 진입점
 # -----------------------------
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Periodically check GPU status and send notifications.")
+    parser.add_argument("--machine-name", type=str, default="A6000", help="Name of the machine being monitored. Used to find the log file.")
+    args = parser.parse_args()
+
+    status_file = f"logs/log_gpustat_{args.machine_name}.jsonl"
+    logger.info(f"모니터링할 로그 파일: '{status_file}'")
+
     while True:
-        main_loop()
+        main_loop(status_file)
         logger.info(f"다음 확인까지 {CHECK_INTERVAL_SECONDS / 3600}시간 대기합니다...")
         time.sleep(CHECK_INTERVAL_SECONDS)
