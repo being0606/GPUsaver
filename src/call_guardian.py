@@ -37,12 +37,12 @@ else:
     logger.warning("SLACK_USER_MAP 환경 변수가 설정되지 않았습니다. 알림을 보낼 사용자가 없습니다.")
 
 NUM_TOTAL_GPUS = 6 # 전체 GPU 개수
-CHECK_INTERVAL_SECONDS = 1800 # 0.5시간
+CHECK_INTERVAL_SECONDS = 3600 # 1시간
 
 # -----------------------------
 # 메인 루프
 # -----------------------------
-def main_loop(status_file: str):
+def main_loop(status_file: str, machine_name: str):
     """GPU 상태를 체크하여 사용자에게 한 번 알림"""
     if not client:
         logger.error("Slack 클라이언트가 초기화되지 않아 프로그램을 종료합니다.")
@@ -60,7 +60,7 @@ def main_loop(status_file: str):
         return
 
     # 로그 분석 및 알림 로직을 유틸리티 함수로 위임
-    analyze_gpu_log_and_notify(last_line, client, USER_MAP, NUM_TOTAL_GPUS, CHECK_INTERVAL_SECONDS, REFERENCE_LINK, status_file)
+    analyze_gpu_log_and_notify(last_line, client, USER_MAP, NUM_TOTAL_GPUS, CHECK_INTERVAL_SECONDS, REFERENCE_LINK, status_file, machine_name)
 
 # -----------------------------
 # 실행 진입점
@@ -74,6 +74,6 @@ if __name__ == "__main__":
     logger.info(f"모니터링할 로그 파일: '{status_file}'")
 
     while True:
-        main_loop(status_file)
+        main_loop(status_file, args.machine_name)
         logger.info(f"다음 확인까지 {CHECK_INTERVAL_SECONDS / 3600}시간 대기합니다...")
         time.sleep(CHECK_INTERVAL_SECONDS)

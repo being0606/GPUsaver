@@ -41,16 +41,16 @@ def write_notification_state(filepath: str, num_available_gpus: int):
 
 
 
-def send_dm(client: WebClient, user_map: dict, user_name: str, text: str):
+def send_dm(client: WebClient, user_map: dict, user_name: str, text: str, blocks: list = None):
     """username 기반으로 Slack DM 전송"""
     user_id = user_map.get(user_name)
     if not user_id:
         logger.warning(f"⚠️ {user_name}의 Slack ID를 찾을 수 없음.")
         return
     try:
-        dm = client.conversations_open(users=[user_id])
-        channel = dm["channel"]["id"]
-        client.chat_postMessage(channel=channel, text=text)
+        response = client.conversations_open(users=[user_id])
+        channel = response["channel"]["id"]
+        client.chat_postMessage(channel=channel, text=text, blocks=blocks)
         logger.info(f"📩 DM 전송 완료 → {user_name}: {text}")
     except SlackApiError as e:
         logger.error(f"⚠️ Slack API 에러 ({user_name}): {e.response['error']}")
@@ -58,7 +58,7 @@ def send_dm(client: WebClient, user_map: dict, user_name: str, text: str):
         logger.error(f"⚠️ DM 전송 중 알 수 없는 에러 ({user_name}): {e}")
 
 
-def analyze_gpu_log_and_notify(last_line: str, client: WebClient, user_map: dict, num_total_gpus: int, check_interval_seconds: int, reference_link: str, status_file: str):
+def analyze_gpu_log_and_notify(last_line: str, client: WebClient, user_map: dict, num_total_gpus: int, check_interval_seconds: int, reference_link: str, status_file: str, machine_name: str):
     """
     최신 GPU 로그 라인을 분석하고, 사용자에게 DM을 보냅니다.
     """
@@ -103,9 +103,9 @@ def analyze_gpu_log_and_notify(last_line: str, client: WebClient, user_map: dict
             return
         # --------------------------
 
-        if num_available_gpus == 0:
+        if num_total_gpus-num_available_gpus == 0:
             status_emoji = "😭"
-        elif num_available_gpus <= 2:
+        elif num_total_gpus-num_available_gpus == 1:
             status_emoji = "🤔"
         else:
             status_emoji = "😊"
@@ -113,30 +113,72 @@ def analyze_gpu_log_and_notify(last_line: str, client: WebClient, user_map: dict
         dt_object = datetime.fromisoformat(timestamp_iso)
         formatted_time = dt_object.strftime("%Y년 %m월 %d일 %H시 %M분")
         
-        guardian_header = f"[ GPU_Guardian 작동중 ]\n{check_interval_seconds / 3600}시간마다 GPU status를 확인하여 변화를 발견하면 알려드립니다.\n"
+        # --- Block Kit 메시지 생성 ---
+        blocks = [
+            {
+                "type": "context",
+                "elements": [
+                    {
+                        "type": "mrkdwn",
+                        "text": f"🕵️ *GPU Guardian* | ⏰ {check_interval_seconds / 3600}시간마다 상태를 점검합니다.(version: 0.0.2)"
+                    }
+                ]
+            },
+            {
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": f"[ {status_emoji} {machine_name} 서버 GPU 사용 현황 ]",
+                    "emoji": True
+                }
+            },
+            {
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": f"*📅 기준 시각:*\n{formatted_time}"}
+            },
+            {
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": f"*🎮 사용 가능 GPU:*\n{num_available_gpus} / {num_total_gpus}"}
+            },
+            {"type": "divider"},
+        ]
 
-        message_header = f"{guardian_header}\n#--------------{status_emoji}--------------#\n\n[A6000서버 GPU 사용 현황]\n - {formatted_time} 기준 \n - 사용 가능: {num_available_gpus} / {num_total_gpus}대"
-
-        # 사용자별 메시지 생성 및 전송
+        # 사용자별 현황 추가
+        fallback_text_parts = [f"[{machine_name}서버 GPU 사용 현황] 사용 가능: {num_available_gpus}/{num_total_gpus}"]
         if user_gpu_map:
-            usage_messages = []
-            for user in sorted(user_gpu_map.keys()):
-                gpus_used_by_user = sorted(list(user_gpu_map[user]))
-                usage_messages.append(f"  - {user} 님: GPU {', '.join(map(str, gpus_used_by_user))}번 사용 중")
-            
-            message = f"{message_header}\n\n[A6000서버 사용자별 현황]\n" + "\n".join(usage_messages)
-            
+            user_details = "\n".join([
+                f"• *{user}* → GPU `{', '.join(map(str, sorted(list(gpu_set))))}`번 사용 중"
+                for user, gpu_set in sorted(user_gpu_map.items())
+            ])
+            blocks.append({
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": f"*👥 사용자별 GPU 현황*\n{user_details}"}
+            })
         else:
-            # 사용자가 없을 때도 상태를 알림
-            message = f"{message_header}\n\n모든 GPU가 사용 가능합니다."
+            blocks.append({
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": "✅ 모든 GPU가 사용 가능합니다."}
+            })
 
-        # 참조 링크 추가
+        # 참조 링크 버튼 추가
         if reference_link:
-            message += f"\n\n[GPU캘린더링크]\nlink: {reference_link}"
-            
+            blocks.extend([
+                {"type": "divider"},
+                {
+                    "type": "actions",
+                    "elements": [
+                        {
+                            "type": "button",
+                            "text": {"type": "plain_text", "text": "🔗 GPU 캘린더 열기", "emoji": True},
+                            "url": reference_link,
+                            "action_id": "open_calendar"
+                        }
+                    ]
+                }
+            ])
         # user_map에 등록된 모든 사용자에게 알림 전송
         for user in user_map.keys():
-            send_dm(client, user_map, user, message)
+            send_dm(client, user_map, user, text=", ".join(fallback_text_parts), blocks=blocks)
         
         # 알림 성공 후 상태 저장
         write_notification_state(state_file, num_available_gpus)
