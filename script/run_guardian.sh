@@ -8,4 +8,4 @@
 #    ./script/run_guardian.sh --machine-name H100
 
 echo "Starting GPU Guardian..."
-python src/call_guardian.py --machine-name A6000
+python src/call_guardian.py --machine-name 3090
