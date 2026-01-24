@@ -103,12 +103,12 @@ def analyze_gpu_log_and_notify(last_line: str, client: WebClient, user_map: dict
             return
         # --------------------------
 
-        if num_total_gpus-num_available_gpus == 0:
+        if num_available_gpus == 0:
             status_emoji = "😭"
-        elif num_total_gpus-num_available_gpus == 1:
-            status_emoji = "🤔"
-        else:
+        elif num_available_gpus == num_total_gpus:
             status_emoji = "😊"
+        else:
+            status_emoji = "🤔"
 
         dt_object = datetime.fromisoformat(timestamp_iso)
         formatted_time = dt_object.strftime("%Y년 %m월 %d일 %H시 %M분")

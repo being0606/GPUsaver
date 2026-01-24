@@ -10,4 +10,4 @@
 #    ./script/get_statue.sh --machine-name H100 --interval 30
 
 echo "Starting GPU monitoring..."
-python src/get_statue.py --machine-name A6000
+python src/get_statue.py --machine-name 3090

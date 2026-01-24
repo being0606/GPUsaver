@@ -36,7 +36,7 @@ if SLACK_USER_MAP_JSON:
 else:
     logger.warning("SLACK_USER_MAP 환경 변수가 설정되지 않았습니다. 알림을 보낼 사용자가 없습니다.")
 
-NUM_TOTAL_GPUS = 6 # 전체 GPU 개수
+NUM_TOTAL_GPUS = 8 # 전체 GPU 개수
 CHECK_INTERVAL_SECONDS = 3600 # 1시간
 
 # -----------------------------
